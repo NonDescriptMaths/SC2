@@ -1,0 +1,116 @@
+---
+title: "Portfolio 5: Parallel Rcpp"
+author: "Kieran Morris"
+output:
+      pdf_document:
+
+---
+
+For this document we will be using the Irish smart meters dataset from the `electbook` package. We first import the data and display the first few rows.
+
+# Preprocessing
+
+```{r}
+
+library(electBook)
+library(skimr)
+data("Irish")
+```
+
+
+We concatonate the electricity data into one vector and center it:
+
+```{r}
+y <- do.call("c", Irish$indCons)
+y <- y - mean(y)
+```
+
+and we plot it against time of day:
+
+```{r}
+ncust <- ncol(Irish$indCons)
+
+x <- rep(Irish$extra$tod, ncust)
+
+n <- length(x)
+ss <- sample(1:n, 1e4)
+plot(x[ss], y[ss], col = "grey")
+
+```
+
+# Simple Regression R
+
+We will now fit a simple linear regression model to the data using the following function:
+
+```{r}
+reg1D <- function(y, x){
+  
+  b <- t(x) %*% y / (t(x) %*% x)  
+  
+  return(b)
+  
+}
+
+```
+
+This function actually performs very fast, although that's probably because it barely does any computation.
+
+```{r}
+system.time( reg1D(y, x) )[3]
+```
+
+# Simple Regression with RcppParallel
+
+We will now implement the same function using RcppParallel. We will use inline Rcpp to do this.
+```{r setup, include=FALSE}
+library(Rcpp)
+library(RcppParallel)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{R}
+Rcpp::sourceCpp(code='
+// [[Rcpp::plugins(openmp)]]
+
+#include <Rcpp.h>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
+using namespace Rcpp;
+
+// [[Rcpp::export]]
+double parallelReg1D(NumericVector y, NumericVector x) {
+   int n = x.size();
+   double b = 0.0;
+   double x_dot_x = 0.0;
+   
+   // Use OpenMP to perform the computation in parallel
+   #pragma omp parallel for reduction(+:b, x_dot_x)
+   for (int i = 0; i < n; i++) {
+      b += x[i] * y[i];
+      x_dot_x += x[i] * x[i];
+   }
+   
+   return b / x_dot_x;
+}
+')
+```
+
+```{r}
+parallelReg1D(y, x)
+reg1D(y, x)
+```
+
+As we can see they line up perfectly! We can also check the speed of the parallel function by using microbenchmark.
+
+```{r}
+
+library(microbenchmark)
+
+microbenchmark(
+  "R" = reg1D(y, x),
+  "Rccp" = parallelReg1D(y, x)
+)
+
+```

@@ -1,0 +1,23 @@
+---
+title: "Intro to IntelTBB"
+author: "Kieran Morris"
+output:
+        pdf_document:
+                toc: true
+                toc_depth: 3
+                number_sections: true
+                fig_caption: true
+                fig_height: 4
+                fig_width: 6
+                fig_crop: true
+                highlight: tango
+                theme: cerulean
+                keep_tex: true
+                latex_engine: xelatex
+---
+
+# Introduction
+
+In this portfolio we will introduce Intel thread building blocks (TBB), which allows us to utilize all of our cores to parallelize our code in C++.
+
+

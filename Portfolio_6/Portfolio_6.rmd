@@ -1,0 +1,177 @@
+---
+title: "Portfolio 6: Linux Command Line"
+author: "Kieran Morris"
+output:
+  pdf_document: default
+---
+
+The command line is the interface to the operating system, and is in fact a language itself, in fact on linux it has a name: bash. It's a great tool that allows you to be much better involved in your computers operations, plus it looks really cool. In this portfolio we will explore a few fundamental commands along with some bonus stuff I've found on my own. We will be making use of `{bash}` code chunks to run these commands.
+
+# Genomic Data
+
+## Navigating and Creating Directories
+
+I have a file called `ncbi_dataset.zip` which contains a dataset of genomic data. I am currently in the correct directory.
+
+```{bash}
+ls
+```
+
+But I need a new directory to store the new files I will create, so we create a new directory called `genomic_data` by running:
+```{bash}
+
+mkdir genomic_data
+
+```
+
+then we can see that the directory has been created by running `ls` again.
+
+```{bash}
+ls
+```
+
+I will then place my zipped file into this directory by running:
+
+```{bash}
+mv ncbi_dataset.zip genomic_data
+```
+
+Let's navigate to the `genomic_data` directory and check we have indeed moved our file:
+
+```{bash}
+cd genomic_data
+ls
+```
+
+Nice!
+
+## Unzipping files
+
+Now we need to unzip the file, we can do this by running:
+
+```{bash}
+cd genomic_data
+unzip ncbi_dataset.zip
+```
+
+This will unzip the file and we can check that it has been unzipped by running:
+
+```{bash}
+cd genomic_data
+ls
+```
+
+We actually have a few files in here, but we specifically care about the `.fna` file:
+
+```{bash}
+cd genomic_data
+cd ncbi_dataset/data/GCA_009858895.3
+ls
+
+```
+
+So lets shift this file to the `genomic_data` directory:
+
+```{bash}
+cd genomic_data
+cd ncbi_dataset/data/GCA_009858895.3
+mv GCA_009858895.3_ASM985889v3_genomic.fna ../../../
+
+```
+
+
+## Processing Data
+
+Let's get a good look at our data by using the `head` command:
+
+```{bash}
+cd genomic_data
+head GCA_009858895.3_ASM985889v3_genomic.fna
+```
+
+Lots of A,C,T and G's! Let's count the number of lines in the file:
+
+```{bash}
+cd genomic_data
+wc -l GCA_009858895.3_ASM985889v3_genomic.fna
+```
+
+This command is pretty simple, lets build a more complex one, lets count the amount of A,C,G and Ts in the file:
+
+```{bash}
+cd genomic_data
+grep -o 'A' GCA_009858895.3_ASM985889v3_genomic.fna | wc -l
+grep -o 'C' GCA_009858895.3_ASM985889v3_genomic.fna | wc -l
+grep -o 'G' GCA_009858895.3_ASM985889v3_genomic.fna | wc -l
+grep -o 'T' GCA_009858895.3_ASM985889v3_genomic.fna | wc -l
+```
+
+One codon (sequence of base pairs) that we care about is called Methionine, which is the start of a sequence, it has the designation `ATG`. Let's count the number of times this codon appears in the file. First we remove the header from the file:
+
+```{bash}
+cd genomic_data
+tail -n +2 GCA_009858895.3_ASM985889v3_genomic.fna > GCA_009858895.3_ASM985889v3_genomic_no_header.fna
+```
+
+Then we count the number of times the codon appears:
+
+```{bash}
+cd genomic_data
+grep -o 'ATG' GCA_009858895.3_ASM985889v3_genomic_no_header.fna | wc -l
+
+```
+
+We can also save chunks of this file to a new file, say we want to save the first 100 lines of the file to a file called `first_100_lines.fna`:
+
+```{bash}
+cd genomic_data
+head -n 100 GCA_009858895.3_ASM985889v3_genomic_no_header.fna > first_100_lines.fna
+```
+
+and by using `ls` we see that we have sucessfully created the file.
+
+```{bash}
+cd genomic_data
+ls
+
+```
+
+# Bonus: CRON
+
+So I have a few pet projects that I run in my spare time, one of them is a hunger games style bot which emails me and my friends at regular intervals with updates on an automated battle which goes on in a python program. I faced a problem, that this program needed to run constantly if it were to work, but I didn't want to constantly have a python program running on my laptop. The solution was to use CRON, a linux tool that allows you to schedule tasks to run at certain times.
+
+You can access the `cron` table by typing `crontab -e` into the command line. This will open up a text editor where you can write your cron jobs.
+
+```{bash,eval = FALSE}
+crontab -e
+```
+
+The syntax for a cron job is as follows:
+
+```{bash,eval = FALSE}
+* * * * * path_to_file_to_run
+
+```
+
+where the asterisks represent the time and date at which the job will run. The first asterisk represents the minute, the second the hour, the third the day of the month, the fourth the month, and the fifth the day of the week. So for example, if you wanted to run a job at 3:30pm every day, you would write:
+
+```{bash  eval = FALSE}
+30 15 * * * path_to_file_to_run
+```
+
+I used this to run my python program every 3 hours, so I wrote:
+
+```{bash, eval = FALSE}
+0 */3 * * * /usr/bin/python3 /home/et18646/Documents/BattleIsland/Python_Code/Battle_Sim.py
+```
+
+To save, you can press `ctrl + x` and then `y` to confirm, then press `enter` to exit. It shows you that you have installed a new job via
+
+```{bash,eval = FALSE}
+crontab: installing new crontab
+```
+
+and you can additionally check by entering `crontab -l` to list all the cron jobs you have installed. It's a really great tool that has led to a lot of fun so I thought I'd include it here! I'm sure it has practical uses too.
+
+
+
